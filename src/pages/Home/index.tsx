@@ -8,7 +8,6 @@ const Home: React.FC = () => {
   //动态绑定配置项
   const [configObject, setConfigObject] = useState<any>(config);
   //动态绑定定时任务
-
   const [robotRunning, setRobotRunning] = useState<boolean>(false);
   const timerRef = React.useRef<any>(null);
   const monitor_contract = "0x4b263e8c60f47decF76BD05B5001c753cd63e35F";
