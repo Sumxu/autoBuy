@@ -1,0 +1,76 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: AlibabaPuHuiTi;
+}
+
+body {
+  padding: 0 !important;
+  margin: 0 auto !important;
+  min-width: 320px;
+  max-width: 600px;
+  min-height: 100vh;
+}
+
+.confirm-btn {
+  background: linear-gradient(270deg, #AB46FF 0%, #00B7FF 48%, #00FFED 100%);
+  font-size: 16px !important;
+  color: #000 !important;
+  border-radius: 9999px !important;
+  border: none !important;
+}
+
+
+.boxBorder::after{
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  border: 1px solid transparent;
+  background: linear-gradient(to bottom, #6B93FA 0%, #6B93FAaa 40%, #6B93FA50 100%) border-box;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  border-radius: 8px;
+  z-index: -1;
+}
+
+.adm-popup-body{
+  background: #092468 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.coloursBT{
+  border: unset !important;
+  border-radius: 25px !important;
+  background: linear-gradient(270deg, #AB46FF 0%, #00B7FF 48%, #00FFED 100%);
+  font-family: AlibabaPuHuiTi;
+  font-size: 16px;
+  font-weight: normal;
+  line-height: normal;
+  text-align: right;
+  letter-spacing: 0px;
+  color: #000000;
+}
+
+
+
+/* 隐藏滚动条 */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* IE and Edge */
+* {
+  -ms-overflow-style: none;
+}

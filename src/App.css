@@ -1,0 +1,98 @@
+.AppBox {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.spinBox {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+}
+ 
+.assetDetailSpinBox {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 40vh;
+}
+.myTeamSpinBox {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 5vh;
+}
+.spinBoxClasify {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 30vh;
+}
+.flex {
+  display: flex;
+}
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+.loding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+}
+.column {
+  flex-direction: column;
+}
+
+.flexBetween {
+  justify-content: space-between;
+}
+
+.flexCenter {
+  justify-content: center;
+}
+
+.flexStart {
+  justify-content: flex-start;
+}
+
+.flexEnd {
+  justify-content: flex-end;
+}
+
+.flexWrap {
+  flex-wrap: wrap;
+}
+
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  flex: 0;
+  border-bottom: solid 1px var(--adm-color-border);
+}
+
+.body {
+  flex: 1;
+}
+
+.bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}

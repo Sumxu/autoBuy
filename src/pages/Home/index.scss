@@ -1,0 +1,31 @@
+.home-page-box {
+  width: 100%;
+  word-wrap: break-word; /* 老式兼容 */
+  word-break: break-all; /* 强制在单词内换行 */
+  white-space: normal;   /* 允许换行，覆盖 nowrap */
+  .Title {
+    text-align: center;
+  }
+  .adm-input-element {
+    border-radius: 16px;
+    background: #000;
+    height: 55px;
+    padding: 0 12px;
+    color: #fff;
+    width: 100%;
+  }
+  .inputWalletsOption {
+    flex: auto !important;
+    width: 280px;
+  }
+  .delBtn {
+    flex: none !important;
+  }
+  .fixedBottom {
+    width: 100%;
+    .fixedBottomBtn {
+      height: 55px;
+      width: 100% !important;
+    }
+  }
+}
