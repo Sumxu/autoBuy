@@ -2,7 +2,9 @@ import "./index.scss";
 import React, { useEffect, useState } from "react";
 import config from "@/config/config";
 import abi from "@/Contract/ABI/abi.json" with {type: "json"};
-import { ethers } from "ethers";
+import { ethers,parseEther} from "ethers";
+import { useNFTMulticall } from "@/Hooks/useNFTTokensByOwner";
+
 import { Input, Button, Space, Switch } from 'antd-mobile'
 const Home: React.FC = () => {
   //动态绑定配置项
@@ -10,10 +12,11 @@ const Home: React.FC = () => {
   //动态绑定定时任务
   const [robotRunning, setRobotRunning] = useState<boolean>(false);
   const timerRef = React.useRef<any>(null);
-  const monitor_contract = "0x4b263e8c60f47decF76BD05B5001c753cd63e35F";
+  const monitor_contract = "0x73aD64825aC7f9d24929316532FA74748F7D34c9";
   const provider = new ethers.JsonRpcProvider(configObject.url, 56);
   let nextWalletIndex = 0;
   const [logs, setLogs] = useState<string[]>([]);
+  const { fetch } = useNFTMulticall();
   async function checkAndApprove(wallet) {
     const USDT = new ethers.Contract(
       "0x55d398326f99059fF775485246999027B3197955",
@@ -61,51 +64,55 @@ const Home: React.FC = () => {
 
     const contract = new ethers.Contract(monitor_contract, abi, wallet);
 
-    const length = await contract.getSellOrderLength();
+    const orderLength = await contract.getSellOrderLength();
+    appendLog("全网订单簿数量:   " + orderLength.toString());
+    const buyPrice = parseEther(configObject.price);
+    const idCalls = Array.from({ length: orderLength.toString() }).map((_, index) => ({
+      contractAddress: monitor_contract,
+      abi,
+      params: [index],
+    }));
+    const ordersResult = await fetch("sellOrders", idCalls);
+    const result=ordersResult.data
+ const groupData = result.reduce((acc, item) => {
+  const key = item[2]
+  if (!acc[key]) acc[key] = 0
+  acc[key]+=1
+  return acc
+}, {})
+  Object.entries(groupData).forEach(([key, value]) => {
+    appendLog( `全网订单簿价格:${ethers.formatEther(key)}----数量${value}`);
+})
 
-    appendLog("全网订单簿数量:   " + length);
-
-    for (let i = 0n; i < length; i++) {
-      const result = await contract.sellOrders(i);
-
-      const id = result[0]; //订单ID
-      const from = result[1]; //发起地址
-      const price = result[2]; //订单价格
-
-      const amount = result[4]; //订单数量
-      const timestamp = Number(result[5]); //下单时间
-      const isMarket = result[7]; //是否是做市订单
-      const to = result[8]; //是否指定交易对象
-
+   try {
+       for (let i = 0n; i < orderLength; i++) {
+        const row=result[i]
+      const id = row[0]; //订单ID
+      const from = row[1]; //发起地址
+      const price = row[2]; //订单价格
+      const amount = row[4]; //订单数量
+      const timestamp = Number(row[5]); //下单时间
+      const isMarket = row[7]; //是否是做市订单
+      const to = row[8]; //是否指定交易对象
       if (buyLog[id]) {
         continue;
       }
-
+      if(price!=buyPrice){
+        continue;
+      }
       const orderTime = new Date(timestamp * 1000);
       const amountFormat = ethers.formatEther(amount);
-
+      console.log(row);
       appendLog(
-        "发现新的订单  订单ID: %s,发起地址: %s,订单价格:%s,订单数量:%s,做市商订单:%s,指定地址:%s,下单时间:%s,",
-        id,
-        from,
-        ethers.formatEther(price),
-        amountFormat,
-        isMarket ? "是" : "否",
-        to,
-        orderTime
+        `发现新的订单  订单ID:${id},发起地址:${from},订单价格:${ethers.formatEther(price)},订单数量:${amountFormat},做市商订单:${isMarket ? "是" : "否"},指定地址:${to},下单时间:${orderTime}`
       );
 
       if (amountFormat > configObject.maxAmount || amountFormat < configObject.minAmount) {
         appendLog(
-          "发现新的订单  订单ID: %s,不符合数量要求，当前:%d ,最小 %d ,最大：%d ",
-          id,
-          amountFormat,
-          configObject.minAmount,
-          configObject.maxAmount
+          `发现新的订单  订单ID: ${id},不符合数量要求，当前:${amountFormat},最小 ${configObject.minAmount} ,最大：${configObject.maxAmount}`,
         );
         buyLog[id] = true;
         continue;
-
       }
       const now = parseInt((new Date().getTime() / 1000).toFixed(0));
       const interval = isMarket ? configObject.bizInterval : configObject.marketInterval;
@@ -115,7 +122,8 @@ const Home: React.FC = () => {
 
       if (isMarket || to !== "0x0000000000000000000000000000000000000000") {
         //管理单
-        appendLog("发现做市商订单,延迟购买:", id, amountFormat, delayS);
+        appendLog("发现做市商订单,延迟秒购买:", '订单ID:'+id, '数量:'+amountFormat, `延迟${delayS}秒`);
+
         nextWalletIndex++;
         if (nextWalletIndex >= configObject.wallets.length) {
           nextWalletIndex = 0;
@@ -124,7 +132,7 @@ const Home: React.FC = () => {
           buy(wallet.address, contract, id, amount, isMarket);
         }, delayS * 1000);
       } else {
-        appendLog("发现普通市场订单,延迟秒购买:", id, amountFormat, delayS);
+        appendLog("发现普通市场订单,延迟秒购买:", '订单ID:'+id, '数量:'+amountFormat, `延迟${delayS}秒`);
         nextWalletIndex++;
         if (nextWalletIndex >= configObject.wallets.length) {
           nextWalletIndex = 0;
@@ -133,21 +141,20 @@ const Home: React.FC = () => {
           buy(wallet.address, contract, id, amount, isMarket);
         }, delayS * 1000);
       }
-
       buyLog[id] = true;
     }
+   } catch (error) {
+
+   }
   }
 
   async function buy(singerAddress, contract, id, amount, isMarket) {
+    const amountString=ethers.formatEther(amount)
     try {
-      //      initUser();
       appendLog(
         isMarket
-          ? "做市商订单开始购买: id %d 数量：%d 发起地址: %s "
-          : "普通订单开始购买: id %d 数量：%d 发起地址: %s ",
-        id,
-        amount,
-        singerAddress
+          ? `做市商订单开始购买: ID:${id} 数量：${amountString} 发起地址: ${singerAddress} `
+          : `普通订单开始购买: ID:${id}  数量：${amountString} 发起地址: ${singerAddress} `
       );
       const tx = await contract.buy(id, amount);
       await tx.wait();
@@ -158,8 +165,8 @@ const Home: React.FC = () => {
           isMarket
             ? "做市商订单购买失败,重试购买:"
             : "普通订单购买失败,重试购买:",
-          id,
-          amount
+          '订单ID:'+id,
+          '数量:'+amountString
         );
         const tx = await contract.buy(id, amount);
         await tx.wait();
@@ -168,9 +175,9 @@ const Home: React.FC = () => {
           isMarket
             ? "做市商订单重试购买失败,结束:"
             : "普通订单重试购买失败,结束:",
-          id,
-          amount,
-          e.reason
+         '订单ID:'+id,
+          '数量:'+amountString,
+          '错误'+e.reason
         );
       }
     }
@@ -182,20 +189,19 @@ const Home: React.FC = () => {
     appendLog("配置项...",configObject);
     for (let i = 0; i < configObject.wallets.length; i++) {
       appendLog(
-        "读取到执行钱包...  %s",
-        new ethers.Wallet(configObject.wallets[i]).address
+        `读取到执行钱包...${ new ethers.Wallet(configObject.wallets[i]).address}`,
+       
       );
     }
-
     appendLog("机器人开始启动...", isRunning);
-    timerRef.current = setInterval(async () => {
+     timerRef.current = setInterval(async () => {
       if (!isRunning) return; // 双保险
       try {
         await doLogs();
       } catch (e) {
         appendLog("执行出现错误：", e);
       }
-    }, 5000);
+   }, 10000);
   }
   const stopRobot = () => {
     if (timerRef.current) {
@@ -294,19 +300,25 @@ const Home: React.FC = () => {
             onChange={(v) => updateField("maxAmount", v)}
             placeholder="最大成交额度"
           />
+           <h3>设置X价格购买</h3>
+          <Input
+            value={configObject.price}
+            onChange={(v) => updateField("price", v)}
+            placeholder="设置对应价格"
+          />
           <h3>RPC Url</h3>
           <Input
             value={configObject.url}
             onChange={(v) => updateField("url", v)}
             placeholder="RPC Url"
           />
-          <h4>钱包列表</h4>
+          <h4>私钥列表</h4>
           {configObject.wallets.map((w, idx) => (
             <Space key={idx} align="center" style={{ width: "100%" }}>
               <Input
                 value={w}
                 onChange={(v) => updateWallet(idx, v)}
-                placeholder={`钱包地址 ${idx + 1}`}
+                placeholder={`私钥地址 ${idx + 1}`}
                 className="inputWalletsOption"
               />
 
